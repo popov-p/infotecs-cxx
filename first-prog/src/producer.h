@@ -3,6 +3,7 @@
 
 #include "shared-buffer.h"
 #include <thread>
+#include <atomic>
 
 class Producer {
 public:
@@ -12,10 +13,11 @@ public:
 private:
   void read();
   void write();
+  bool wait_for_input(int timeout_seconds);
   std::thread* _reader_thread;
   std::thread* _writer_thread;
   SharedBuffer _shared_buffer;
-  bool _stop_requested = false;
+  std::atomic<bool> _stop_requested = false;
 };
 
 #endif // PRODUCER_H
