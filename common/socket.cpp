@@ -14,7 +14,8 @@ Socket::Socket(const std::string& socket_path) : _socket_path(socket_path), _soc
   }
 }
 
-Socket::~Socket() {
+ServerSocket::~ServerSocket() {
+  std::cout << "ServerSocket destructor call" << std::endl;
   if (_sockfd >= 0) {
     close();
   }
@@ -31,14 +32,8 @@ bool ClientSocket::connect() {
 
   for (int i = 0; i < max_retries; ++i) {
     if (::connect(_sockfd, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
-      if (errno == ENOENT) {
-        std::cerr << "Connection failed, retrying..." << std::endl;
-        std::this_thread::sleep_for(std::chrono::seconds(retry_delay));
-      }
-      else {
-        perror("Connect failed");
-        return false;
-      }
+      std::cerr << "Connection failed, retrying..." << std::endl;
+      std::this_thread::sleep_for(std::chrono::seconds(retry_delay));
     }
     else
       return true;
@@ -85,21 +80,30 @@ void Socket::close() {
 }
 
 void ServerSocket::read() {
-  while (true) {
-    char buffer[1024];
-    ssize_t bytes_read = ::read(_sockfd, buffer, sizeof(buffer) - 1);
-    if (bytes_read > 0) {
-      buffer[bytes_read] = '\0';
-      std::string data(buffer);
-      DataProcessor::analyze(data);
+  while(true) {
+    int client_sockfd = ::accept(_sockfd, nullptr, nullptr);
+    if (client_sockfd < 0) {
+      perror("Accept failed");
+      return;
     }
-    else if (bytes_read == 0) {
-      std::cout << "Соединение закрыто." << std::endl;
-      break;
-    }
-    else {
-      std::cerr << "Ошибка при чтении данных из сокета." << std::endl;
-      break;
+    while (true) {
+      char buffer[256];
+      ssize_t bytes_read = ::read(client_sockfd, buffer, sizeof(buffer) - 1);
+      if (bytes_read > 0) {
+        buffer[bytes_read] = '\0';
+        std::string data(buffer);
+        DataProcessor::analyze(data);
+      }
+      else if (bytes_read == 0) {
+        std::cout << "Соединение закрыто" << std::endl;
+        ::close(client_sockfd);
+        break;
+      }
+      else {
+        std::cerr << "Error reading data from socket: " << strerror(errno) << std::endl;
+        ::close(client_sockfd);
+        break;
+      }
     }
   }
 }

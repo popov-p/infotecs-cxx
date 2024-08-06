@@ -19,7 +19,7 @@ private:
   std::unique_ptr<std::thread> _writer_thread;
   SharedBuffer _shared_buffer;
   bool _stop_requested = false;
-  std::unique_ptr<Socket> _socket;
+  std::unique_ptr<ClientSocket> _socket;
 };
 
 #endif // PRODUCER_H

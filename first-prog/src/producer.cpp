@@ -15,7 +15,7 @@ void Producer::stop() {
     if (thread && thread->joinable())
       thread->join();
   }
-  _socket->close();
+  //_socket->close();
   std::cout << "DEBUG: ALL THREADS JOINED, SOCKET CLOSED" << std::endl;
 }
 
@@ -51,7 +51,7 @@ void Producer::write() {
     if (!data.empty()) {
       std::cout << "Поток-2 получил данные: " << data << std::endl;
       std::cout << "Сумма чисел: " << DataProcessor::process(data) << std::endl;
-      // IPC here
+      _socket->send(data);
     }
   }
 }

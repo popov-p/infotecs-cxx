@@ -6,7 +6,7 @@
 class Socket {
 public:
   Socket(const std::string& socket_path);
-  virtual ~Socket();
+  virtual ~Socket() {};
   virtual bool connect() = 0;
   void close();
 
@@ -18,6 +18,7 @@ protected:
 class ClientSocket: public Socket {
 public:
   ClientSocket(const std::string& socket_path): Socket(socket_path) {};
+  ~ClientSocket() override = default;
   bool connect() override;
   bool send(const std::string& data);
 };
@@ -25,6 +26,7 @@ public:
 class ServerSocket : public Socket {
 public:
   ServerSocket(const std::string& socket_path): Socket(socket_path) {};
+  ~ServerSocket() override;
   bool connect() override;
   void read();
 };
