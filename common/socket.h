@@ -8,6 +8,7 @@ public:
   Socket(const std::string& socket_path);
   virtual ~Socket() {};
   virtual bool connect() = 0;
+  void create();
   void close();
 
 protected:

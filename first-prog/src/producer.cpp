@@ -16,20 +16,18 @@ void Producer::stop() {
       thread->join();
   }
   //_socket->close();
-  std::cout << "DEBUG: ALL THREADS JOINED, SOCKET CLOSED" << std::endl;
+  std::cout << "DEBUG: ALL THREADS JOINED" << std::endl;
 }
 
 void Producer::read() {
   while (!_stop_requested) {
-    std::cout << "Введите строку (только цифры, до 64 символов): " << std::endl;
-    std::cout.flush();
-    if (wait_for_input(2)) {
+    if (wait_for_input(10)) {
       std::string user_input;
       std::cin >> user_input;
       std::string result = DataProcessor::validate(user_input);
       if (!result.empty()) {
         _shared_buffer.write(result);
-        std::cout << "Поток-1 поместил результат в буфер. Ожидает следующего ввода..." << std::endl;
+        //std::cout << "Поток-1 поместил результат в буфер. Ожидает следующего ввода..." << std::endl;
       }
     }
     else {
@@ -49,14 +47,14 @@ void Producer::write() {
       break;
     }
     if (!data.empty()) {
-      std::cout << "Поток-2 получил данные: " << data << std::endl;
+      //std::cout << "Поток-2 получил данные: " << data << std::endl;
       std::cout << "Сумма чисел: " << DataProcessor::process(data) << std::endl;
       _socket->send(data);
     }
   }
 }
 
-bool Producer::wait_for_input(int timeout_seconds) {
+bool Producer::wait_for_input(int timeout_seconds) { /*Это добавлено для красоты.*/
   fd_set read_fds;
   FD_ZERO(&read_fds);
   FD_SET(STDIN_FILENO, &read_fds);

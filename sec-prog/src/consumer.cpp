@@ -8,6 +8,5 @@ void Consumer::start() {
 }
 
 void Consumer::stop() {
-  std::cout << "Stop called!" << std::endl;
   _socket->close();
 }

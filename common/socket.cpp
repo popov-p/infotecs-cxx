@@ -7,17 +7,20 @@
 #include <unistd.h>
 
 Socket::Socket(const std::string& socket_path) : _socket_path(socket_path), _sockfd(-1) {
+  create();
+}
+
+ServerSocket::~ServerSocket() {
+  if (_sockfd >= 0) {
+    close();
+  }
+}
+
+void Socket::create() {
   _sockfd = socket(AF_UNIX, SOCK_STREAM, 0);
   if (_sockfd < 0) {
     perror("Socket creation failed");
     throw std::runtime_error("Socket creation failed");
-  }
-}
-
-ServerSocket::~ServerSocket() {
-  std::cout << "ServerSocket destructor call" << std::endl;
-  if (_sockfd >= 0) {
-    close();
   }
 }
 
@@ -27,16 +30,21 @@ bool ClientSocket::connect() {
   addr.sun_family = AF_UNIX;
   strncpy(addr.sun_path, _socket_path.c_str(), sizeof(addr.sun_path) - 1);
 
-  const int max_retries = 2;
+  const int max_retries = 5;
   const int retry_delay = 2;
 
   for (int i = 0; i < max_retries; ++i) {
     if (::connect(_sockfd, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
-      std::cerr << "Connection failed, retrying..." << std::endl;
+      std::cerr << "Не удалось подключиться, переподключение..." << std::endl;
       std::this_thread::sleep_for(std::chrono::seconds(retry_delay));
     }
-    else
+    else {
+      std::cout << "Соединение установлено." << std::endl;
+      std::cout << "Введите строку (только цифры, до 64 символов): " << std::endl;
+      std::cout.flush();
       return true;
+    }
+
   }
   return false;
 }
@@ -66,7 +74,12 @@ bool ServerSocket::connect() {
 bool ClientSocket::send(const std::string& data) {
   ssize_t bytes_sent = ::send(_sockfd, data.c_str(), data.size(), 0);
   if (bytes_sent < 0) {
-    perror("Send failed");
+    if (errno == EPIPE) {
+      perror("Send failed");
+      close();
+      create();
+      connect();
+    }
     return false;
   }
   return true;
@@ -86,23 +99,26 @@ void ServerSocket::read() {
       perror("Accept failed");
       return;
     }
-    while (true) {
-      char buffer[256];
-      ssize_t bytes_read = ::read(client_sockfd, buffer, sizeof(buffer) - 1);
-      if (bytes_read > 0) {
-        buffer[bytes_read] = '\0';
-        std::string data(buffer);
-        DataProcessor::analyze(data);
-      }
-      else if (bytes_read == 0) {
-        std::cout << "Соединение закрыто" << std::endl;
-        ::close(client_sockfd);
-        break;
-      }
-      else {
-        std::cerr << "Error reading data from socket: " << strerror(errno) << std::endl;
-        ::close(client_sockfd);
-        break;
+    else {
+      std::cout << "Cоединение установлено." << std::endl;
+      while (true) {
+        char buffer[256];
+        ssize_t bytes_read = ::read(client_sockfd, buffer, sizeof(buffer) - 1);
+        if (bytes_read > 0) {
+          buffer[bytes_read] = '\0';
+          std::string data(buffer);
+          DataProcessor::analyze(data);
+        }
+        else if (bytes_read == 0) {
+          std::cout << "Соединение закрыто." << std::endl;
+          ::close(client_sockfd);
+          break;
+        }
+        else {
+          std::cerr << "Error reading data from socket: " << strerror(errno) << std::endl;
+          ::close(client_sockfd);
+          break;
+        }
       }
     }
   }
