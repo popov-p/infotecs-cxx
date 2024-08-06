@@ -1,20 +1,22 @@
 #include "producer.h"
-#include "data-processor.h"
+#include "../../common/data-processor.h"
 #include <sys/select.h>
 #include <unistd.h>
 
 void Producer::start() {
-  _reader_thread = new std::thread(&Producer::read, this);
-  _writer_thread = new std::thread(&Producer::write, this);
+  if(_socket->connect()) {
+    _reader_thread = std::make_unique<std::thread>(&Producer::read, this);
+    _writer_thread = std::make_unique<std::thread>(&Producer::write, this);
+  }
 }
 
 void Producer::stop() {
-  for (const auto& thread: {_reader_thread, _writer_thread}) {
-    if (thread->joinable())
+  for (const auto& thread: {_reader_thread.get(), _writer_thread.get()}) {
+    if (thread && thread->joinable())
       thread->join();
-    delete thread;
   }
-  std::cout << "DEBUG: ALL THREADS JOINED" << std::endl;
+  _socket->close();
+  std::cout << "DEBUG: ALL THREADS JOINED, SOCKET CLOSED" << std::endl;
 }
 
 void Producer::read() {
@@ -27,7 +29,7 @@ void Producer::read() {
       std::string result = DataProcessor::validate(user_input);
       if (!result.empty()) {
         _shared_buffer.write(result);
-        std::cout << "Результат помещен в буфер. Ожидание следующего ввода..." << std::endl;
+        std::cout << "Поток-1 поместил результат в буфер. Ожидает следующего ввода..." << std::endl;
       }
     }
     else {
@@ -43,11 +45,11 @@ void Producer::write() {
     std::string data = _shared_buffer.read();
     _shared_buffer.clear();
     if (_stop_requested) {
-        std::cout << "DEBUG: WRITER THREAD REQUESTED STOP, EXITING..." << std::endl;
-        break;
+      std::cout << "DEBUG: WRITER THREAD REQUESTED STOP, EXITING..." << std::endl;
+      break;
     }
     if (!data.empty()) {
-      std::cout << "Полученные данные: " << data << std::endl;
+      std::cout << "Поток-2 получил данные: " << data << std::endl;
       std::cout << "Сумма чисел: " << DataProcessor::process(data) << std::endl;
       // IPC here
     }

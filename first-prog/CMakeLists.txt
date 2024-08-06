@@ -4,8 +4,10 @@ set(PROJECT_SOURCES
         src/producer.cpp
         src/shared-buffer.h
         src/shared-buffer.cpp
-        src/data-processor.h
-        src/data-processor.cpp
+        ../common/data-processor.h
+        ../common/data-processor.cpp
+        ../common/socket.h
+        ../common/socket.cpp
 )
 
 add_executable(fp ${PROJECT_SOURCES})

@@ -26,6 +26,7 @@ public:
     }
     return result;
   }
+
   static int process(const std::string& input) {
     int sum = 0;
     std::stringstream ss(input);
@@ -37,6 +38,16 @@ public:
     return sum;
   }
 
+  static void analyze(const std::string& data) {
+    if (data.length() > 2) {
+      if (data.length() % 32 == 0)
+        std::cout << "Получены данные: " << data << std::endl;
+      else
+        std::cout << "Ошибка: длина данных не кратна 32." << std::endl;
+    }
+    else
+      std::cout << "Ошибка: данные содержат меньше 3 символов." << std::endl;
+  }
 };
 
 #endif // DATA_PROCESSOR_H

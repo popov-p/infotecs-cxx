@@ -1,0 +1,105 @@
+#include "socket.h"
+#include "data-processor.h"
+#include <iostream>
+#include <thread>
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <unistd.h>
+
+Socket::Socket(const std::string& socket_path) : _socket_path(socket_path), _sockfd(-1) {
+  _sockfd = socket(AF_UNIX, SOCK_STREAM, 0);
+  if (_sockfd < 0) {
+    perror("Socket creation failed");
+    throw std::runtime_error("Socket creation failed");
+  }
+}
+
+Socket::~Socket() {
+  if (_sockfd >= 0) {
+    close();
+  }
+}
+
+bool ClientSocket::connect() {
+  struct sockaddr_un addr;
+  memset(&addr, 0, sizeof(addr));
+  addr.sun_family = AF_UNIX;
+  strncpy(addr.sun_path, _socket_path.c_str(), sizeof(addr.sun_path) - 1);
+
+  const int max_retries = 2;
+  const int retry_delay = 2;
+
+  for (int i = 0; i < max_retries; ++i) {
+    if (::connect(_sockfd, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
+      if (errno == ENOENT) {
+        std::cerr << "Connection failed, retrying..." << std::endl;
+        std::this_thread::sleep_for(std::chrono::seconds(retry_delay));
+      }
+      else {
+        perror("Connect failed");
+        return false;
+      }
+    }
+    else
+      return true;
+  }
+  return false;
+}
+
+bool ServerSocket::connect() {
+  struct sockaddr_un server_addr;
+  memset(&server_addr, 0, sizeof(server_addr));
+  server_addr.sun_family = AF_UNIX;
+  strncpy(server_addr.sun_path, _socket_path.c_str(), sizeof(server_addr.sun_path) - 1);
+
+  unlink(server_addr.sun_path);
+
+  if (bind(_sockfd, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
+    perror("Bind failed");
+    close();
+    return false;
+  }
+
+  if (listen(_sockfd, 5) < 0) {
+    perror("Listen failed");
+    close();
+    return false;
+  }
+  return true;
+};
+
+bool ClientSocket::send(const std::string& data) {
+  ssize_t bytes_sent = ::send(_sockfd, data.c_str(), data.size(), 0);
+  if (bytes_sent < 0) {
+    perror("Send failed");
+    return false;
+  }
+  return true;
+}
+
+void Socket::close() {
+  if (_sockfd >= 0) {
+    ::close(_sockfd);
+    _sockfd = -1;
+  }
+}
+
+void ServerSocket::read() {
+  while (true) {
+    char buffer[1024];
+    ssize_t bytes_read = ::read(_sockfd, buffer, sizeof(buffer) - 1);
+    if (bytes_read > 0) {
+      buffer[bytes_read] = '\0';
+      std::string data(buffer);
+      DataProcessor::analyze(data);
+    }
+    else if (bytes_read == 0) {
+      std::cout << "Соединение закрыто." << std::endl;
+      break;
+    }
+    else {
+      std::cerr << "Ошибка при чтении данных из сокета." << std::endl;
+      break;
+    }
+  }
+}
