@@ -3,8 +3,10 @@
 
 #include "shared-buffer.h"
 #include "../../common/socket.h"
+
 #include <thread>
 #include <memory>
+
 
 class Producer {
 public:
@@ -21,5 +23,6 @@ private:
   bool _stop_requested = false;
   std::unique_ptr<ClientSocket> _socket;
 };
+
 
 #endif // PRODUCER_H

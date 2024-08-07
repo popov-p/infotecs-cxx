@@ -1,5 +1,7 @@
 #include "consumer.h"
+
 #include <iostream>
+
 
 void Consumer::start() {
   if(_socket->connect()) {

@@ -1,5 +1,8 @@
 #include "shared-buffer.h"
+
 #include <iostream>
+
+
 void SharedBuffer::write(const std::string& data) {
   {
     std::lock_guard<std::mutex> lock(mtx);

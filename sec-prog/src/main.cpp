@@ -20,5 +20,5 @@ void signal_handler(int signum) {
 int main() {
   std::signal(SIGINT, signal_handler);
   cr.start();
-  return 0;
+  exit(EXIT_SUCCESS);
 }

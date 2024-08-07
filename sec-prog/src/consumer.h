@@ -2,7 +2,9 @@
 #define CONSUMER_H
 
 #include "../../common/socket.h"
+
 #include <memory>
+
 
 class Consumer {
 public:
@@ -12,4 +14,5 @@ public:
 private:
   std::unique_ptr<ServerSocket> _socket;
 };
+
 #endif // CONSUMER_H

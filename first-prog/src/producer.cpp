@@ -1,7 +1,9 @@
 #include "producer.h"
 #include "../../common/data-processor.h"
+
 #include <sys/select.h>
 #include <unistd.h>
+
 
 void Producer::start() {
   if(_socket->connect()) {
@@ -15,7 +17,6 @@ void Producer::stop() {
     if (thread && thread->joinable())
       thread->join();
   }
-  //_socket->close();
   std::cout << "DEBUG: ALL THREADS JOINED" << std::endl;
 }
 
@@ -27,7 +28,6 @@ void Producer::read() {
       std::string result = DataProcessor::validate(user_input);
       if (!result.empty()) {
         _shared_buffer.write(result);
-        //std::cout << "Поток-1 поместил результат в буфер. Ожидает следующего ввода..." << std::endl;
       }
     }
     else {
@@ -47,14 +47,14 @@ void Producer::write() {
       break;
     }
     if (!data.empty()) {
-      //std::cout << "Поток-2 получил данные: " << data << std::endl;
+      std::cout << "Получена строка: " << data << std::endl;
       std::cout << "Сумма чисел: " << DataProcessor::process(data) << std::endl;
       _socket->send(data);
     }
   }
 }
 
-bool Producer::wait_for_input(int timeout_seconds) { /*Это добавлено для красоты.*/
+bool Producer::wait_for_input(int timeout_seconds) { /* Таймаут добавлен для красоты */
   fd_set read_fds;
   FD_ZERO(&read_fds);
   FD_SET(STDIN_FILENO, &read_fds);

@@ -3,6 +3,7 @@
 
 #include <string>
 
+
 class Socket {
 public:
   Socket(const std::string& socket_path);

@@ -1,10 +1,12 @@
 #include "socket.h"
 #include "data-processor.h"
+
 #include <iostream>
 #include <thread>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <unistd.h>
+
 
 Socket::Socket(const std::string& socket_path) : _socket_path(socket_path), _sockfd(-1) {
   create();
